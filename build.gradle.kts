@@ -37,6 +37,11 @@ compose.desktop {
 
             windows {
                 menuGroup = "DiscordServerClonerGUI"
+                iconFile.set(project.file("src/main/resources/images/clone.ico"))
+            }
+
+            linux {
+                iconFile.set(project.file("src/main/resources/images/clone.png"))
             }
         }
     }

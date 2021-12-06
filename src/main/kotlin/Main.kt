@@ -1,23 +1,28 @@
-// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 import androidx.compose.animation.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.platform.Font
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.ApplicationScope
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowScope
-import androidx.compose.ui.window.application
+import androidx.compose.ui.window.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.javacord.api.AccountType
 import org.javacord.api.DiscordApi
 import org.javacord.api.DiscordApiBuilder
@@ -46,12 +51,15 @@ fun App(window: WindowScope, application: ApplicationScope) {
 
     var api: DiscordApi? = null
 
+    var lazyListState = rememberLazyListState()
+
     val bahnschrift = FontFamily(
         Font(
             resource = "fonts/bahnschrift.ttf"
         )
     )
 
+    val coroutineScope = rememberCoroutineScope()
 
     MaterialTheme {
 
@@ -163,17 +171,22 @@ fun App(window: WindowScope, application: ApplicationScope) {
                                     textColor = Color(255, 255, 255),
                                     focusedBorderColor = firstInterfaceColor,
                                     cursorColor = firstInterfaceColor,
-                                    unfocusedBorderColor = firstInterfaceColor
-                                )
+                                    unfocusedBorderColor = firstInterfaceColor,
+                                    focusedLabelColor = firstInterfaceColor,
+                                    unfocusedLabelColor = Color(255, 255, 255)
+                                ),
+                                label = {
+                                    Text("Token")
+                                }
                             )
 
                             Button(
                                 onClick = {
                                     thread {
-//                                        api = DiscordApiBuilder()
-//                                            .setAccountType(AccountType.CLIENT)
-//                                            .setToken(tokenFiled)
-//                                            .login().join();
+                                        api = DiscordApiBuilder()
+                                            .setAccountType(AccountType.CLIENT)
+                                            .setToken(tokenFiled)
+                                            .login().join();
 
                                         isLogged = true
                                     }
@@ -249,13 +262,20 @@ fun App(window: WindowScope, application: ApplicationScope) {
                                     textColor = Color(255, 255, 255),
                                     focusedBorderColor = firstInterfaceColor,
                                     cursorColor = firstInterfaceColor,
-                                    unfocusedBorderColor = firstInterfaceColor
-                                )
+                                    unfocusedBorderColor = firstInterfaceColor,
+                                    focusedLabelColor = firstInterfaceColor,
+                                    unfocusedLabelColor = Color(255, 255, 255)
+                                ),
+                                label = {
+                                    Text("Server ID")
+                                }
                             )
 
                             Button(
                                 onClick = {
-                                    clone(serverIdField.toLong(), api!!, logsList)
+                                    thread {
+                                        clone(serverIdField.toLong(), api!!, logsList, lazyListState, coroutineScope)
+                                    }
                                 },
                                 modifier = Modifier
                                     .align(Alignment.CenterHorizontally)
@@ -270,7 +290,7 @@ fun App(window: WindowScope, application: ApplicationScope) {
                             Button(
                                 onClick = {
                                     thread {
-//                                        api!!.disconnect()
+                                        api!!.disconnect()
 
                                         isLogged = false
                                     }
@@ -284,6 +304,31 @@ fun App(window: WindowScope, application: ApplicationScope) {
                             ) {
                                 Text("Disconnect")
                             }
+
+                            AnimatedVisibility(logsList.isNotEmpty()) {
+
+                                Box {
+                                    LazyColumn(
+                                        state = lazyListState,
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .size(300.dp)
+                                    ) {
+
+                                        items(logsList.size) { index ->
+
+                                            TextBox(logsList[index])
+
+                                            Spacer(
+                                                modifier = Modifier.height(6.dp)
+                                            )
+
+                                        }
+
+                                    }
+                                }
+
+                            }
                         }
                     }
                 }
@@ -294,11 +339,11 @@ fun App(window: WindowScope, application: ApplicationScope) {
     }
 }
 
-fun clone(id: Long, api: DiscordApi, logs: MutableList<String>) {
+fun clone(id: Long, api: DiscordApi, logs: SnapshotStateList<String>, state: LazyListState, coroutineScope: CoroutineScope) {
 
     var server = api.getServerById(id);
 
-    logs.add("Creating server...")
+    logs.addAndUpdateList("Creating server...", state, coroutineScope)
 
     var newServerIcon: Icon? = try {
         server.get().icon.get();
@@ -316,7 +361,7 @@ fun clone(id: Long, api: DiscordApi, logs: MutableList<String>) {
             }
         }.create().join();
     } catch (exc: Exception){
-        logs.add("Error was found when creating server! Maybe you have 100 servers limit!")
+        logs.addAndUpdateList("Error was found when creating server! Maybe you have 100 servers limit!", state, coroutineScope)
         return
     }
 
@@ -324,9 +369,9 @@ fun clone(id: Long, api: DiscordApi, logs: MutableList<String>) {
 
     var newServer = api.getServerById(newServerId).get();
 
-    logs.add("Created server \"${newServer.name}\"")
+    logs.addAndUpdateList("Created server \"${newServer.name}\"", state, coroutineScope)
 
-    logs.add("Creating roles... (only this process is running to avoid bugs)")
+    logs.addAndUpdateList("Creating roles... (only this process is running to avoid bugs)", state, coroutineScope)
 
     var rolesThread = thread {
         server.get().roles.reversed().forEach { role ->
@@ -341,14 +386,14 @@ fun clone(id: Long, api: DiscordApi, logs: MutableList<String>) {
                 setMentionable(role.isMentionable)
                 setDisplaySeparately(role.isDisplayedSeparately)
             }.create().join().also {
-                logs.add("Created role \"${it.name}\"")
+                logs.addAndUpdateList("Created role \"${it.name}\"", state, coroutineScope)
             }
         }
     }
 
     rolesThread.join()
 
-    logs.add("Deleting default channels...")
+    logs.addAndUpdateList("Deleting default channels...", state, coroutineScope)
 
     var deleteDefaultChannelsThread = thread {
         newServer.channels.forEach { channel ->
@@ -356,7 +401,7 @@ fun clone(id: Long, api: DiscordApi, logs: MutableList<String>) {
         }
     }
 
-    logs.add("Creating channels...")
+    logs.addAndUpdateList("Creating channels...", state, coroutineScope)
 
     var currentCategory: ChannelCategory? = null;
 
@@ -367,11 +412,11 @@ fun clone(id: Long, api: DiscordApi, logs: MutableList<String>) {
                     var channelCategory = newServer.createChannelCategoryBuilder().apply {
                         setName(channel.name)
                     }.create().join().also {
-                        logs.add("Created category \"${it.name}\"")
+                        logs.addAndUpdateList("Created category \"${it.name}\"", state, coroutineScope)
                         currentCategory = it;
                     }
 
-                    logs.add("Editing permissions for category \"${channelCategory.name}\"")
+                    logs.addAndUpdateList("Editing permissions for category \"${channelCategory.name}\"", state, coroutineScope)
 
                     channel.overwrittenRolePermissions.forEach { rolePermissions ->
                         channelCategory.createUpdater().addPermissionOverwrite(newServer.getRolesByName(api.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
@@ -385,10 +430,10 @@ fun clone(id: Long, api: DiscordApi, logs: MutableList<String>) {
                             setCategory(it)
                         }
                     }.create().join().also {
-                        logs.add("Created text channel \"${it.name}\"")
+                        logs.addAndUpdateList("Created text channel \"${it.name}\"", state, coroutineScope)
                     }
 
-                    logs.add("Editing permissions for text channel \"${textChannel.name}\"")
+                    logs.addAndUpdateList("Editing permissions for text channel \"${textChannel.name}\"", state, coroutineScope)
 
                     channel.overwrittenRolePermissions.forEach { rolePermissions ->
                         textChannel.createUpdater().addPermissionOverwrite(newServer.getRolesByName(api.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
@@ -402,24 +447,24 @@ fun clone(id: Long, api: DiscordApi, logs: MutableList<String>) {
                             setCategory(it)
                         }
                     }.create().join().also {
-                        logs.add("Created voice channel \"${it.name}\"")
+                        logs.addAndUpdateList("Created voice channel \"${it.name}\"", state, coroutineScope)
                     }
 
-                    logs.add("Editing permissions for voice channel \"${voiceChannel.name}\"")
+                    logs.addAndUpdateList("Editing permissions for voice channel \"${voiceChannel.name}\"", state, coroutineScope)
 
                     channel.overwrittenRolePermissions.forEach { rolePermissions ->
                         voiceChannel.createUpdater().addPermissionOverwrite(newServer.getRolesByName(api.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
                     }
                 }
                 ChannelType.SERVER_STAGE_VOICE_CHANNEL -> {
-                    logs.add("Could not created stage channel :(")
+                    logs.addAndUpdateList("Could not created stage channel :(", state, coroutineScope)
                 }
                 else -> {}
             }
         }
     }
 
-    logs.add("Creating emojis...")
+    logs.addAndUpdateList("Creating emojis...", state, coroutineScope)
 
     var createEmojisThread = thread {
         server.get().customEmojis.forEach { emoji ->
@@ -427,7 +472,7 @@ fun clone(id: Long, api: DiscordApi, logs: MutableList<String>) {
                 setName(emoji.name)
                 setImage(emoji.image)
             }.create().join().also {
-                logs.add("Created emoji \"${it.name}\"")
+                logs.addAndUpdateList("Created emoji \"${it.name}\"", state, coroutineScope)
             }
         }
     }
@@ -437,7 +482,7 @@ fun clone(id: Long, api: DiscordApi, logs: MutableList<String>) {
     createEmojisThread.join();
 
 
-    logs.add("Server cloned :)")
+    logs.addAndUpdateList("Server cloned :)", state, coroutineScope)
 
 }
 
@@ -448,7 +493,8 @@ fun TextBox(text: String = "Item") {
             .height(45.dp)
             .width(400.dp)
             .background(color = Color(230, 230, 230, 50))
-            .padding(start = 10.dp),
+            .padding(start = 10.dp)
+            .clip(RoundedCornerShape(15.dp)),
         contentAlignment = Alignment.CenterStart
     ) {
         Text(text = text)
@@ -460,8 +506,21 @@ fun main() = application {
         onCloseRequest = ::exitApplication,
         title = "DiscordServerClonerGUI",
         icon = painterResource("images/clone.png"),
-        undecorated = true
+        undecorated = true,
+        resizable = false,
+        state = WindowState(size = DpSize(600.dp, 600.dp))
     ) {
         App(this@Window, this@application)
     }
+}
+
+fun SnapshotStateList<String>.addAndUpdateList(elem: String, state: LazyListState, coroutineScope: CoroutineScope) {
+
+    add(elem)
+
+    coroutineScope.launch {
+        state.scrollToItem(size - 1)
+    }
+
+
 }
