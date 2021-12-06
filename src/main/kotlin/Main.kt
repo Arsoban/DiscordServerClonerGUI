@@ -1,7 +1,5 @@
 // Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -29,6 +27,7 @@ import org.javacord.api.entity.channel.ChannelType
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 @Preview
 fun App(window: WindowScope, application: ApplicationScope) {
@@ -108,40 +107,41 @@ fun App(window: WindowScope, application: ApplicationScope) {
             }
         ) {
 
-            Box(
+
+            AnimatedVisibility(
+                visible = !isLogged,
+                enter = slideInHorizontally { offset ->
+                    offset
+                },
+                exit = slideOutHorizontally { offset ->
+                    offset
+                },
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(backgroundColor)
             ) {
-                Column(
+
+                Box(
                     modifier = Modifier
-                        .align(Alignment.TopCenter)
-                ) {
-
-                    Text(
-                        "DiscordServerClonerGUI",
-                        fontSize = 24.sp,
+                        .fillMaxSize()
+                        .background(backgroundColor)
+                ){
+                    Column(
                         modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(6.dp),
-                        color = Color(255, 255, 255)
-                    )
-
-                    AnimatedVisibility(
-                        visible = !isLogged,
-                        enter = slideInHorizontally { offset ->
-                            offset
-                        },
-                        exit = slideOutHorizontally { offset ->
-                            offset
-                        },
-                        modifier = Modifier
-
+                            .align(Alignment.TopCenter)
                     ) {
 
                         Column(
 
                         ) {
+
+                            Text(
+                                "DiscordServerClonerGUI",
+                                fontSize = 24.sp,
+                                modifier = Modifier
+                                    .align(Alignment.CenterHorizontally)
+                                    .padding(6.dp),
+                                color = Color(255, 255, 255)
+                            )
+
                             Text(
                                 "Enter your token below!",
                                 fontSize = 16.sp,
@@ -170,10 +170,10 @@ fun App(window: WindowScope, application: ApplicationScope) {
                             Button(
                                 onClick = {
                                     thread {
-                                        api = DiscordApiBuilder()
-                                            .setAccountType(AccountType.CLIENT)
-                                            .setToken(tokenFiled)
-                                            .login().join();
+//                                        api = DiscordApiBuilder()
+//                                            .setAccountType(AccountType.CLIENT)
+//                                            .setToken(tokenFiled)
+//                                            .login().join();
 
                                         isLogged = true
                                     }
@@ -189,21 +189,44 @@ fun App(window: WindowScope, application: ApplicationScope) {
                             }
                         }
 
-
                     }
+                }
 
-                    AnimatedVisibility(
-                        visible = isLogged,
-                        enter = slideInHorizontally { offset ->
-                            -offset
-                        },
-                        exit = slideOutHorizontally { offset ->
-                            -offset
-                        }
+
+            }
+
+
+            AnimatedVisibility(
+                visible = isLogged,
+                enter = slideInHorizontally { offset ->
+                    -offset
+                },
+                exit = slideOutHorizontally { offset ->
+                    -offset
+                }
+            ) {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(backgroundColor)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
                     ) {
                         Column(
 
                         ) {
+
+                            Text(
+                                "DiscordServerClonerGUI",
+                                fontSize = 24.sp,
+                                modifier = Modifier
+                                    .align(Alignment.CenterHorizontally)
+                                    .padding(6.dp),
+                                color = Color(255, 255, 255)
+                            )
 
                             Text(
                                 "Enter id of server you want to clone!",
@@ -247,7 +270,7 @@ fun App(window: WindowScope, application: ApplicationScope) {
                             Button(
                                 onClick = {
                                     thread {
-                                        api!!.disconnect()
+//                                        api!!.disconnect()
 
                                         isLogged = false
                                     }
@@ -263,7 +286,6 @@ fun App(window: WindowScope, application: ApplicationScope) {
                             }
                         }
                     }
-
                 }
             }
 
