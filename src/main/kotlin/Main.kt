@@ -29,6 +29,7 @@ import org.javacord.api.DiscordApiBuilder
 import org.javacord.api.entity.Icon
 import org.javacord.api.entity.channel.ChannelCategory
 import org.javacord.api.entity.channel.ChannelType
+import java.awt.geom.RoundRectangle2D
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
@@ -510,6 +511,8 @@ fun main() = application {
         resizable = false,
         state = WindowState(size = DpSize(600.dp, 600.dp))
     ) {
+        window.shape = RoundRectangle2D.Double(0.0, 0.0, 600.0, 600.0, 50.0, 50.0)
+
         App(this@Window, this@application)
     }
 }
