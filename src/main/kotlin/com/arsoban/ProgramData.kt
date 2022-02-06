@@ -11,5 +11,7 @@ data class ProgramData(
     var isLogged: MutableState<Boolean> = mutableStateOf(false),
     var tokenField: MutableState<String> = mutableStateOf(""),
     var serverIdField: MutableState<String> = mutableStateOf(""),
-    var logsList: SnapshotStateList<String> = mutableStateListOf()
+    var logsList: SnapshotStateList<String> = mutableStateListOf(),
+    var isLoginButtonActive: MutableState<Boolean> = mutableStateOf(true),
+    var isDisconnectButtonActive: MutableState<Boolean> = mutableStateOf(false)
 )

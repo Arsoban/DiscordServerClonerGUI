@@ -27,6 +27,8 @@ fun App() {
 
     val lazyListState = rememberLazyListState()
 
+    val scaffoldState = rememberScaffoldState()
+
     val utilModule = module {
 
         single(named("interfaceColor")) { interfaceColor }
@@ -34,6 +36,7 @@ fun App() {
         single(named("coroutineScope")) { coroutineScope }
         single(named("programData")) { programData }
         single(named("lazyListState")) { lazyListState }
+        single(named("scaffoldState")) { scaffoldState }
 
     }
 
@@ -44,7 +47,8 @@ fun App() {
     MaterialTheme {
 
         Scaffold(
-            topBar = scaffoldSettings.appTopBar
+            topBar = scaffoldSettings.appTopBar,
+            scaffoldState = scaffoldState
         ) {
 
             LoginScreen().loginScreen()

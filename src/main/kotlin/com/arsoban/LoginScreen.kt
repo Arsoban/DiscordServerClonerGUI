@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.javacord.api.AccountType
 import org.javacord.api.DiscordApi
 import org.javacord.api.DiscordApiBuilder
@@ -25,6 +27,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.component.inject
 import org.koin.core.qualifier.named
+import java.util.concurrent.CompletionException
 import kotlin.concurrent.thread
 
 class LoginScreen : KoinComponent {
@@ -32,6 +35,10 @@ class LoginScreen : KoinComponent {
     private val interfaceColor by inject<InterfaceColor>(named("interfaceColor"))
 
     private val programData by inject<ProgramData>(named("programData"))
+
+    private val scaffoldState by inject<ScaffoldState>(named("scaffoldState"))
+
+    private val coroutineScope by inject<CoroutineScope>(named("coroutineScope"))
 
     @Composable
     fun loginScreen() {
@@ -112,12 +119,22 @@ class LoginScreen : KoinComponent {
                         Button(
                             onClick = {
                                 thread {
-                                    programData.api = DiscordApiBuilder()
-                                        .setAccountType(AccountType.CLIENT)
-                                        .setToken(programData.tokenField.value)
-                                        .login().join();
+                                    programData.isLoginButtonActive.value = false
 
-                                    programData.isLogged.value = true
+                                    try {
+                                        programData.api = DiscordApiBuilder()
+                                            .setAccountType(AccountType.CLIENT)
+                                            .setToken(programData.tokenField.value)
+                                            .login().join();
+
+                                        programData.isLogged.value = true
+                                        programData.isDisconnectButtonActive.value = true
+                                    } catch (exc: CompletionException) {
+                                        coroutineScope.launch {
+                                            scaffoldState.snackbarHostState.showSnackbar("Error, invalid token specified.")
+                                        }
+                                        programData.isLoginButtonActive.value = true
+                                    }
                                 }
                             },
                             modifier = Modifier
@@ -125,7 +142,8 @@ class LoginScreen : KoinComponent {
                                 .padding(6.dp),
                             colors = ButtonDefaults.buttonColors(
                                 interfaceColor.secondInterfaceColor
-                            )
+                            ),
+                            enabled = programData.isLoginButtonActive.value
                         ) {
                             Text("Login")
                         }

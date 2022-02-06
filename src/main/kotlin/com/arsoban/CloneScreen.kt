@@ -146,9 +146,12 @@ class CloneScreen : KoinComponent {
                         Button(
                             onClick = {
                                 thread {
+                                    programData.isDisconnectButtonActive.value = false
+
                                     programData.api!!.disconnect()
 
                                     programData.isLogged.value = false
+                                    programData.isLoginButtonActive.value = true
                                 }
                             },
                             modifier = Modifier
@@ -156,7 +159,8 @@ class CloneScreen : KoinComponent {
                                 .padding(6.dp),
                             colors = ButtonDefaults.buttonColors(
                                 interfaceColor.secondInterfaceColor
-                            )
+                            ),
+                            enabled = programData.isDisconnectButtonActive.value
                         ) {
                             Text("Disconnect")
                         }
