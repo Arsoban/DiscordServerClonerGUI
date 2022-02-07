@@ -1,4 +1,4 @@
-package com.arsoban
+package com.arsoban.cloner
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
@@ -21,10 +21,8 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.javacord.api.AccountType
-import org.javacord.api.DiscordApi
 import org.javacord.api.DiscordApiBuilder
 import org.koin.core.component.KoinComponent
-import org.koin.core.component.get
 import org.koin.core.component.inject
 import org.koin.core.qualifier.named
 import java.util.concurrent.CompletionException

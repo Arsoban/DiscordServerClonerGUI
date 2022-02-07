@@ -1,4 +1,4 @@
-package com.arsoban
+package com.arsoban.cloner
 
 import androidx.compose.ui.graphics.Color
 

@@ -1,4 +1,4 @@
-package com.arsoban
+package com.arsoban.cloner
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
@@ -24,14 +24,20 @@ import club.minnced.discord.webhook.send.WebhookMessageBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import org.javacord.api.entity.Icon
 import org.javacord.api.entity.channel.ChannelCategory
 import org.javacord.api.entity.channel.ChannelType
 import org.javacord.api.entity.channel.ServerTextChannel
+import org.javacord.api.entity.server.Server
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.qualifier.named
+import java.util.*
+import kotlin.NoSuchElementException
 import kotlin.concurrent.thread
 
 class CloneScreen : KoinComponent {
@@ -463,93 +469,10 @@ class CloneScreen : KoinComponent {
 
         programData.logsList.addAndUpdateList("Creating channels...", lazyListState, coroutineScope)
 
-        var currentCategory: ChannelCategory? = null;
-
         val createChannelsCoroutine = GlobalScope.launch {
-            server.get().channels.forEach { channel ->
-                when (channel.type) {
-                    ChannelType.CHANNEL_CATEGORY -> {
-                        val channelCategory = newServer.createChannelCategoryBuilder().apply {
-                            setName(channel.name)
-                        }.create().join().also {
-                            programData.logsList.addAndUpdateList("Created category \"${it.name}\"", lazyListState, coroutineScope)
-                            currentCategory = it;
-                        }
+            channelsFlow(server, newServer).collect() { textChannels ->
 
-                        programData.logsList.addAndUpdateList("Editing permissions for category \"${channelCategory.name}\"", lazyListState, coroutineScope)
-
-                        channel.overwrittenRolePermissions.forEach { rolePermissions ->
-                            channelCategory.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
-                        }
-
-                    }
-                    ChannelType.SERVER_TEXT_CHANNEL -> {
-                        val textChannel = newServer.createTextChannelBuilder().apply {
-                            setName(channel.name)
-                            currentCategory?.let {
-                                setCategory(it)
-                            }
-                        }.create().join().also {
-                            oldNewTextChannels[channel as ServerTextChannel] = it
-                            programData.logsList.addAndUpdateList("Created text channel \"${it.name}\"", lazyListState, coroutineScope)
-                        }
-
-                        programData.logsList.addAndUpdateList("Editing permissions for text channel \"${textChannel.name}\"", lazyListState, coroutineScope)
-
-                        channel.overwrittenRolePermissions.forEach { rolePermissions ->
-                            textChannel.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
-                        }
-
-                    }
-                    ChannelType.SERVER_VOICE_CHANNEL -> {
-                        val voiceChannel = newServer.createVoiceChannelBuilder().apply {
-                            setName(channel.name)
-                            currentCategory?.let {
-                                setCategory(it)
-                            }
-                        }.create().join().also {
-                            programData.logsList.addAndUpdateList("Created voice channel \"${it.name}\"", lazyListState, coroutineScope)
-                        }
-
-                        programData.logsList.addAndUpdateList("Editing permissions for voice channel \"${voiceChannel.name}\"", lazyListState, coroutineScope)
-
-                        channel.overwrittenRolePermissions.forEach { rolePermissions ->
-                            voiceChannel.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
-                        }
-                    }
-                    ChannelType.SERVER_STAGE_VOICE_CHANNEL -> {
-                        programData.logsList.addAndUpdateList("Could not created stage channel :(", lazyListState, coroutineScope)
-                    }
-                    else -> {}
-                }
-            }
-        }
-
-        programData.logsList.addAndUpdateList("Creating emojis...", lazyListState, coroutineScope)
-
-        val createEmojisCoroutine = GlobalScope.launch {
-            server.get().customEmojis.forEach { emoji ->
-                newServer.createCustomEmojiBuilder().apply {
-                    setName(emoji.name)
-                    setImage(emoji.image)
-                }.create().join().also {
-                    programData.logsList.addAndUpdateList("Created emoji \"${it.name}\"", lazyListState, coroutineScope)
-                }
-            }
-        }
-
-        deleteDefaultChannelsCoroutine.join();
-        createChannelsCoroutine.join();
-        createEmojisCoroutine.join();
-
-
-        programData.logsList.addAndUpdateList("Starting messages cloning...", lazyListState, coroutineScope)
-
-        val messagesCloningCoroutine = GlobalScope.launch {
-
-            for ((oldChannel, newChannel) in oldNewTextChannels) {
-
-                val incomingWebhook = newChannel.createWebhookBuilder().apply {
+                val incomingWebhook = textChannels[1].createWebhookBuilder().apply {
 
                     setName("Cloner Helper")
 
@@ -558,7 +481,7 @@ class CloneScreen : KoinComponent {
 
                 val webhookClient = JavacordWebhookClient.withUrl(incomingWebhook.url.toString())
 
-                val messages = oldChannel.messagesAsStream.toList().reversed()
+                val messages = textChannels[0].messagesAsStream.toList().reversed()
 
                 for (msg in messages) {
 
@@ -583,12 +506,93 @@ class CloneScreen : KoinComponent {
                 }
 
             }
-
         }
 
-        messagesCloningCoroutine.join();
+        programData.logsList.addAndUpdateList("Creating emojis...", lazyListState, coroutineScope)
+
+        val createEmojisCoroutine = GlobalScope.launch {
+            server.get().customEmojis.forEach { emoji ->
+                newServer.createCustomEmojiBuilder().apply {
+                    setName(emoji.name)
+                    setImage(emoji.image)
+                }.create().join().also {
+                    programData.logsList.addAndUpdateList("Created emoji \"${it.name}\"", lazyListState, coroutineScope)
+                }
+            }
+        }
+
+        deleteDefaultChannelsCoroutine.join();
+        createChannelsCoroutine.join();
+        createEmojisCoroutine.join();
+
+
+        programData.logsList.addAndUpdateList("Starting messages cloning...", lazyListState, coroutineScope)
 
         programData.logsList.addAndUpdateList("Server cloned :)", lazyListState, coroutineScope)
+    }
+
+    private fun channelsFlow(server: Optional<Server>, newServer: Server): Flow<List<ServerTextChannel>> = flow {
+
+        var currentCategory: ChannelCategory? = null;
+
+        server.get().channels.forEach { channel ->
+            when (channel.type) {
+                ChannelType.CHANNEL_CATEGORY -> {
+                    val channelCategory = newServer.createChannelCategoryBuilder().apply {
+                        setName(channel.name)
+                    }.create().join().also {
+                        programData.logsList.addAndUpdateList("Created category \"${it.name}\"", lazyListState, coroutineScope)
+                        currentCategory = it;
+                    }
+
+                    programData.logsList.addAndUpdateList("Editing permissions for category \"${channelCategory.name}\"", lazyListState, coroutineScope)
+
+                    channel.overwrittenRolePermissions.forEach { rolePermissions ->
+                        channelCategory.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
+                    }
+
+                }
+                ChannelType.SERVER_TEXT_CHANNEL -> {
+                    val textChannel = newServer.createTextChannelBuilder().apply {
+                        setName(channel.name)
+                        currentCategory?.let {
+                            setCategory(it)
+                        }
+                    }.create().join().also {
+                        emit(listOf(channel as ServerTextChannel, it as ServerTextChannel))
+                        programData.logsList.addAndUpdateList("Created text channel \"${it.name}\"", lazyListState, coroutineScope)
+                    }
+
+                    programData.logsList.addAndUpdateList("Editing permissions for text channel \"${textChannel.name}\"", lazyListState, coroutineScope)
+
+                    channel.overwrittenRolePermissions.forEach { rolePermissions ->
+                        textChannel.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
+                    }
+
+                }
+                ChannelType.SERVER_VOICE_CHANNEL -> {
+                    val voiceChannel = newServer.createVoiceChannelBuilder().apply {
+                        setName(channel.name)
+                        currentCategory?.let {
+                            setCategory(it)
+                        }
+                    }.create().join().also {
+                        programData.logsList.addAndUpdateList("Created voice channel \"${it.name}\"", lazyListState, coroutineScope)
+                    }
+
+                    programData.logsList.addAndUpdateList("Editing permissions for voice channel \"${voiceChannel.name}\"", lazyListState, coroutineScope)
+
+                    channel.overwrittenRolePermissions.forEach { rolePermissions ->
+                        voiceChannel.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
+                    }
+                }
+                ChannelType.SERVER_STAGE_VOICE_CHANNEL -> {
+                    programData.logsList.addAndUpdateList("Could not created stage channel :(", lazyListState, coroutineScope)
+                }
+                else -> {}
+            }
+        }
+
     }
 
 }
