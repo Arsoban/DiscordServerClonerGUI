@@ -525,9 +525,6 @@ class CloneScreen : KoinComponent {
         createChannelsCoroutine.join();
         createEmojisCoroutine.join();
 
-
-        programData.logsList.addAndUpdateList("Starting messages cloning...", lazyListState, coroutineScope)
-
         programData.logsList.addAndUpdateList("Server cloned :)", lazyListState, coroutineScope)
     }
 
