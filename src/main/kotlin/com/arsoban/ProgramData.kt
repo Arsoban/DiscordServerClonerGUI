@@ -13,5 +13,6 @@ data class ProgramData(
     var serverIdField: MutableState<String> = mutableStateOf(""),
     var logsList: SnapshotStateList<String> = mutableStateListOf(),
     var isLoginButtonActive: MutableState<Boolean> = mutableStateOf(true),
-    var isDisconnectButtonActive: MutableState<Boolean> = mutableStateOf(false)
+    var isDisconnectButtonActive: MutableState<Boolean> = mutableStateOf(false),
+    var isMessagesCloningEnabled: MutableState<Boolean> = mutableStateOf(false)
 )

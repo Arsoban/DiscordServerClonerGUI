@@ -2,7 +2,7 @@
 
 Fully clones server.
 
-Clones: server icon, all channels with permissions, all roles with permissions, emojis.
+Clones: server icon, all channels with permissions, all roles with permissions, emojis, messages(if you want).
 
 ## Cloning
 

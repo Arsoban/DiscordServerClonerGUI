@@ -19,6 +19,7 @@ repositories {
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation("org.javacord:javacord:3.3.2")
+    implementation("club.minnced:discord-webhooks:0.7.5")
     implementation("io.insert-koin:koin-core:3.1.5")
 }
 
@@ -32,7 +33,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Exe, TargetFormat.AppImage)
             packageName = "DiscordServerClonerGUI"
-            packageVersion = "1.0.0"
+            packageVersion = "2.0.0"
             description = "DiscordServerClonerGUI"
             vendor = "Arsoban"
 
