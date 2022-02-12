@@ -10,7 +10,11 @@ fun SnapshotStateList<String>.addAndUpdateList(elem: String, state: LazyListStat
     add(elem)
 
     coroutineScope.launch {
-        state.scrollToItem(size - 1)
+        try {
+            state.scrollToItem(size - 1)
+        } catch (_: Exception) {
+
+        }
     }
 
 

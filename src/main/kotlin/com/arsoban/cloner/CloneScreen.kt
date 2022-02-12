@@ -392,12 +392,12 @@ class CloneScreen : KoinComponent {
             }
         }
 
-        deleteDefaultChannelsCoroutine.join();
-        createChannelsCoroutine.join();
-        createEmojisCoroutine.join();
+//        deleteDefaultChannelsCoroutine.join();
+//        createChannelsCoroutine.join();
+//        createEmojisCoroutine.join();
 
 
-        programData.logsList.addAndUpdateList("Server cloned :)", lazyListState, coroutineScope)
+//        programData.logsList.addAndUpdateList("Server cloned :)", lazyListState, coroutineScope)
     }
 
 
@@ -471,38 +471,37 @@ class CloneScreen : KoinComponent {
 
         val createChannelsCoroutine = GlobalScope.launch {
             channelsFlow(server, newServer).collect() { textChannels ->
+                try {
 
-                val incomingWebhook = textChannels[1].createWebhookBuilder().apply {
+                    val incomingWebhook = textChannels[1].createWebhookBuilder().apply {
+                        setName("Cloner Helper")
+                    }.create().join()
 
-                    setName("Cloner Helper")
+                    val webhookClient = JavacordWebhookClient.withUrl(incomingWebhook.url.toString())
 
+                    val messages = textChannels[0].messagesAsStream.toList().reversed()
 
-                }.create().join()
+                    for (msg in messages) {
 
-                val webhookClient = JavacordWebhookClient.withUrl(incomingWebhook.url.toString())
+                        if (msg.content.isEmpty())
+                            continue
 
-                val messages = textChannels[0].messagesAsStream.toList().reversed()
-
-                for (msg in messages) {
-
-                    if (msg.content.isEmpty())
-                        continue
-
-                    try {
                         webhookClient.send(
                             WebhookMessageBuilder().apply {
 
                                 setUsername(msg.userAuthor.get().name)
                                 setAvatarUrl(msg.userAuthor.get().avatar.url.toString())
 
-                                setContent(msg.content)
+                                setContent(msg.readableContent)
 
                             }.build()
                         )
-                    } catch (_: Exception) {
-                        ;
+
                     }
 
+
+                } catch (exc: Exception) {
+                    exc.printStackTrace()
                 }
 
             }
@@ -521,17 +520,16 @@ class CloneScreen : KoinComponent {
             }
         }
 
-        deleteDefaultChannelsCoroutine.join();
-        createChannelsCoroutine.join();
-        createEmojisCoroutine.join();
-
-        programData.logsList.addAndUpdateList("Server cloned :)", lazyListState, coroutineScope)
+//        deleteDefaultChannelsCoroutine.join();
+//        createChannelsCoroutine.join();
+//        createEmojisCoroutine.join();
+//
+//        programData.logsList.addAndUpdateList("Server cloned :)", lazyListState, coroutineScope)
     }
 
     private fun channelsFlow(server: Optional<Server>, newServer: Server): Flow<List<ServerTextChannel>> = flow {
 
         var currentCategory: ChannelCategory? = null;
-
         server.get().channels.forEach { channel ->
             when (channel.type) {
                 ChannelType.CHANNEL_CATEGORY -> {
@@ -541,7 +539,6 @@ class CloneScreen : KoinComponent {
                         programData.logsList.addAndUpdateList("Created category \"${it.name}\"", lazyListState, coroutineScope)
                         currentCategory = it;
                     }
-
                     programData.logsList.addAndUpdateList("Editing permissions for category \"${channelCategory.name}\"", lazyListState, coroutineScope)
 
                     channel.overwrittenRolePermissions.forEach { rolePermissions ->
