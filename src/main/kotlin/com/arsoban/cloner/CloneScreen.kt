@@ -536,7 +536,11 @@ class CloneScreen : KoinComponent {
                     val channelCategory = newServer.createChannelCategoryBuilder().apply {
                         setName(channel.name)
                     }.create().join().also {
-                        programData.logsList.addAndUpdateList("Created category \"${it.name}\"", lazyListState, coroutineScope)
+                        programData.logsList.addAndUpdateList(
+                            "Created category \"${it.name}\"",
+                            lazyListState,
+                            coroutineScope
+                        )
                         currentCategory = it;
                     }
                     programData.logsList.addAndUpdateList("Editing permissions for category \"${channelCategory.name}\"", lazyListState, coroutineScope)
