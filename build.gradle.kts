@@ -18,7 +18,7 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
-    implementation("org.javacord:javacord:3.3.2")
+    implementation("org.javacord:javacord:3.4.0")
     implementation("club.minnced:discord-webhooks:0.7.5")
     implementation("io.insert-koin:koin-core:3.1.5")
 }

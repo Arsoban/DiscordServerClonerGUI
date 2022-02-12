@@ -32,6 +32,7 @@ import org.javacord.api.entity.Icon
 import org.javacord.api.entity.channel.ChannelCategory
 import org.javacord.api.entity.channel.ChannelType
 import org.javacord.api.entity.channel.ServerTextChannel
+import org.javacord.api.entity.channel.ServerVoiceChannel
 import org.javacord.api.entity.server.Server
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -333,7 +334,7 @@ class CloneScreen : KoinComponent {
 
                         programData.logsList.addAndUpdateList("Editing permissions for category \"${channelCategory.name}\"", lazyListState, coroutineScope)
 
-                        channel.overwrittenRolePermissions.forEach { rolePermissions ->
+                        (channel as ChannelCategory).overwrittenRolePermissions.forEach { rolePermissions ->
                             channelCategory.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
                         }
 
@@ -350,7 +351,7 @@ class CloneScreen : KoinComponent {
 
                         programData.logsList.addAndUpdateList("Editing permissions for text channel \"${textChannel.name}\"", lazyListState, coroutineScope)
 
-                        channel.overwrittenRolePermissions.forEach { rolePermissions ->
+                        (channel as ServerTextChannel).overwrittenRolePermissions.forEach { rolePermissions ->
                             textChannel.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
                         }
 
@@ -367,7 +368,7 @@ class CloneScreen : KoinComponent {
 
                         programData.logsList.addAndUpdateList("Editing permissions for voice channel \"${voiceChannel.name}\"", lazyListState, coroutineScope)
 
-                        channel.overwrittenRolePermissions.forEach { rolePermissions ->
+                        (channel as ServerVoiceChannel).overwrittenRolePermissions.forEach { rolePermissions ->
                             voiceChannel.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
                         }
                     }
@@ -545,7 +546,7 @@ class CloneScreen : KoinComponent {
                     }
                     programData.logsList.addAndUpdateList("Editing permissions for category \"${channelCategory.name}\"", lazyListState, coroutineScope)
 
-                    channel.overwrittenRolePermissions.forEach { rolePermissions ->
+                    (channel as ChannelCategory).overwrittenRolePermissions.forEach { rolePermissions ->
                         channelCategory.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
                     }
 
@@ -563,7 +564,7 @@ class CloneScreen : KoinComponent {
 
                     programData.logsList.addAndUpdateList("Editing permissions for text channel \"${textChannel.name}\"", lazyListState, coroutineScope)
 
-                    channel.overwrittenRolePermissions.forEach { rolePermissions ->
+                    (channel as ServerTextChannel).overwrittenRolePermissions.forEach { rolePermissions ->
                         textChannel.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
                     }
 
@@ -580,7 +581,7 @@ class CloneScreen : KoinComponent {
 
                     programData.logsList.addAndUpdateList("Editing permissions for voice channel \"${voiceChannel.name}\"", lazyListState, coroutineScope)
 
-                    channel.overwrittenRolePermissions.forEach { rolePermissions ->
+                    (channel as ServerVoiceChannel).overwrittenRolePermissions.forEach { rolePermissions ->
                         voiceChannel.createUpdater().addPermissionOverwrite(newServer.getRolesByName(programData.api!!.getRoleById(rolePermissions.key).get().name)[0], rolePermissions.value).update().join()
                     }
                 }
