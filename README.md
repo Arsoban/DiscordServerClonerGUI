@@ -1,3 +1,4 @@
+# This project is deprecated, new project: https://github.com/Arsoban/discord_server_cloner
 ## Functions
 
 Fully clones server.
